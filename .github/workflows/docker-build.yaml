@@ -14,15 +14,15 @@ jobs:
         service:
           - name: main-ui
             path: ./main-ui
-            image: akkc-main
+            image: akkcmain
 
           - name: support-ui
             path: ./support-ui
-            image: akkc-support
+            image: akkcsupport
 
           - name: email-ui
             path: ./email-ui
-            image: akkc-email
+            image: akkcemail
 
     steps:
 
