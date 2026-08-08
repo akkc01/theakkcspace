@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     strategy:
       matrix:
@@ -42,4 +43,9 @@ jobs:
         push: true
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:latest
-          ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
+
+
+    # ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
+
+
+          
