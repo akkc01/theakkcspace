@@ -1,4 +1,88 @@
-name: Build and Push Docker Images
+# name: Build and Push Docker Images
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   build-and-push:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 30
+
+#     strategy:
+#       matrix:
+#         service:
+#           - name: main-ui
+#             path: ./main-ui
+#             image: akkcmain
+
+#           - name: support-ui
+#             path: ./support-ui
+#             image: akkcsupport
+
+#           - name: email-ui
+#             path: ./email-ui
+#             image: akkcemail
+
+#     steps:
+
+#     - name: Checkout Code
+#       uses: actions/checkout@v4
+
+#     - name: Login to Docker Hub
+#       uses: docker/login-action@v3
+#       with:
+#         username: ${{ secrets.DOCKER_USERNAME }}
+#         password: ${{ secrets.DOCKER_PASSWORD }}
+
+#     - name: Build and Push Image
+#       uses: docker/build-push-action@v5
+#       with:
+#         context: ${{ matrix.service.path }}
+#         push: true
+#         tags: |
+#           ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:latest
+
+#           ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
+
+# # Updating Helm Chart Values, Image Tags, and Pushing to Helm Repo
+#     - name: Checkout Helm Repo
+#       uses: actions/checkout@v4
+#       with:
+#         repository: akkc01/theakkcspace-deploy-aks-helm-argocd
+#         token: ${{ secrets.GH_PAT }}
+#         path: theakkcspace-deploy-aks-helm-argocd
+
+# # Updating the image tags in the Helm chart values.yaml files
+#     - name: Update main-chart values
+#       run: |
+#         cd theakkcspace-deploy-aks-helm-argocd
+#         sed -i "s/tag:.*/tag: ${{ github.sha }}/" theakkcspace-helm/main-chart/values.yaml
+
+#     - name: Update support-chart values
+#       run: |
+#         cd theakkcspace-deploy-aks-helm-argocd
+#         sed -i "s/tag:.*/tag: ${{ github.sha }}/" theakkcspace-helm/support-chart/values.yaml
+
+#     - name: Update email-chart values
+#       run: |
+#         cd theakkcspace-deploy-aks-helm-argocd
+#         sed -i "s/tag:.*/tag: ${{ github.sha }}/" theakkcspace-helm/email-chart/values.yaml
+    
+# # Committing and pushing the changes to the Helm repo    
+#     - name: Commit and Push
+#       run: |
+#         cd helm-repo
+#         git config user.name "github-actions"
+#         git config user.email "actions@github.com"
+#         git add .
+#         git commit -m "Update image tag to ${{ github.sha }}"
+#         git push
+
+
+
+name: Build Push and Update Helm
 
 on:
   push:
@@ -6,7 +90,7 @@ on:
       - main
 
 jobs:
-  build-and-push:
+  build-and-update:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -16,36 +100,71 @@ jobs:
           - name: main-ui
             path: ./main-ui
             image: akkcmain
-
           - name: support-ui
             path: ./support-ui
             image: akkcsupport
-
           - name: email-ui
             path: ./email-ui
             image: akkcemail
 
     steps:
 
-    - name: Checkout Code
+    # Checkout App Repo
+    - name: Checkout App Code
       uses: actions/checkout@v4
 
+# Debug (optional but useful)
+    - name: Debug Files
+      run: ls -R
+
+# Docker Login
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+
+# Build & Push Images
     - name: Build and Push Image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ${{ matrix.service.path }}
         push: true
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:latest
+          ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
 
 
-    # ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
+# Checkout Helm Repo
+    - name: Checkout Helm Repo
+      uses: actions/checkout@v4
+      with:
+        repository: akkc01/theakkcspace-deploy-aks-helm-argocd
+        token: ${{ secrets.GH_PAT }}
+        path: helm-repo
 
+# Install yq (YAML tool) for updating Helm values.yaml files in a proper way
+    - name: Install yq
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yq
 
-          
+# Update Helm values.yaml files with the new image tag
+    - name: Update Helm values
+      run: |
+        echo "Updating image tag to ${{ github.sha }}"
+
+        yq -i '.image.tag = "${{ github.sha }}"' helm-repo/theakkcspace-helm/main-chart/values.yaml
+        yq -i '.image.tag = "${{ github.sha }}"' helm-repo/theakkcspace-helm/support-chart/values.yaml
+        yq -i '.image.tag = "${{ github.sha }}"' helm-repo/theakkcspace-helm/email-chart/values.yaml
+
+# Commit & Push Changes
+    - name: Commit and Push
+      run: |
+        cd helm-repo
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+        git add .
+        git commit -m "Update image tag to ${{ github.sha }}" || echo "No changes to commit"
+        git push
