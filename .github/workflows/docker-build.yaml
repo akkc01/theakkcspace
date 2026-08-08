@@ -147,17 +147,20 @@ jobs:
 # Install yq (YAML tool) for updating Helm values.yaml files in a proper way
     - name: Install yq
       run: |
-        sudo apt-get update
-        sudo apt-get install -y yq
+        sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+        sudo chmod +x /usr/local/bin/yq
 
 # Update Helm values.yaml files with the new image tag
     - name: Update Helm values
+      if: matrix.service.name == 'main-ui'
       run: |
-        echo "Updating image tag to ${{ github.sha }}"
+        TAG=${{ github.sha }}
 
-        yq -i '.image.tag = "${{ github.sha }}"' helm-repo/theakkcspace-helm/main-chart/values.yaml
-        yq -i '.image.tag = "${{ github.sha }}"' helm-repo/theakkcspace-helm/support-chart/values.yaml
-        yq -i '.image.tag = "${{ github.sha }}"' helm-repo/theakkcspace-helm/email-chart/values.yaml
+        echo "Updating image tag to $TAG"
+
+        yq e -i ".image.tag = \"$TAG\"" helm-repo/theakkcspace-helm/main-chart/values.yaml
+        yq e -i ".image.tag = \"$TAG\"" helm-repo/theakkcspace-helm/support-chart/values.yaml
+        yq e -i ".image.tag = \"$TAG\"" helm-repo/theakkcspace-helm/email-chart/values.yaml
 
 # Commit & Push Changes
     - name: Commit and Push
@@ -168,6 +171,7 @@ jobs:
         git config user.name "github-actions"
         git config user.email "actions@github.com"
 
+        # Ensure correct branch
         git checkout main
         git pull origin main
 
