@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Support Service</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1>🛠 Support Service</h1>
+
+<div class="container">
+
+  <form id="ticketForm" class="card">
+
+    <h2>Create Support Ticket</h2>
+
+    <input type="text" id="name" placeholder="Your Name" required>
+
+    <input type="email" id="email" placeholder="Your Email" required>
+
+    <select id="issueType">
+      <option value="">Select Issue Type</option>
+      <option>Deployment Issue</option>
+      <option>AKS Issue</option>
+      <option>CI/CD Failure</option>
+      <option>Other</option>
+    </select>
+
+    <select id="priority">
+      <option value="">Priority</option>
+      <option>Low</option>
+      <option>Medium</option>
+      <option>High</option>
+    </select>
+
+    <textarea id="description" placeholder="Describe your issue..." required></textarea>
+
+    <button type="submit">Submit Ticket</button>
+
+  </form>
+
+  <div id="successMessage" class="success hidden">
+    ✅ Ticket Submitted Successfully!
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
